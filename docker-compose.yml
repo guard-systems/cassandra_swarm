@@ -1,0 +1,26 @@
+version: '3'
+services:
+  cassandraswarm:
+    image: cassandra_swarm_from_repo
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+        window: 120s
+      resources:
+        limits:
+          memory: 1000mb      
+    environment:
+      SERVICENAME: '{{.Service.Name}}'
+    networks: 
+      cassandra-net:
+    volumes:
+      - cassandravolume:/var/lib/cassandra
+volumes:
+  cassandravolume:
+    external:
+      name: 'cassandra_volume_{{.Task.Slot}}'
+networks:
+  cassandra-net:
+      
