@@ -37,7 +37,7 @@ networks:
   cassandra-net:
 ```
 Then you should be able to run:  
-```Shell Session
+```bash
 $  docker stack deploy -c docker-compose.yml cassandraswarm
 Creating network cassandraswarm_cassandra-net
 Creating service cassandraswarm_cassandraswarm
