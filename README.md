@@ -56,4 +56,26 @@ UN  10.0.0.3  68.2 KiB   256          68.2%             c68ab9b9-c45d-4078-ae29-
 UN  10.0.0.4  68.22 KiB  256          65.8%             dafad622-0017-4112-97c2-a72595b7ef19  rack1
 UN  10.0.0.5  69.93 KiB  256          65.9%             366bae6e-f7f0-4403-9eb3-06cf0b59d785  rack1
 ```
+# How does it work?
+The image is based on https://github.com/docker-library/cassandra and the only difference is that the docker-entrypoint.sh file is changed to contain these lines:
+```bash
+# Wait 15 seconds to be sure that all nodes in the swarm has started and are available in DNS
+sleep 15s
+ownip="$(hostname)"
+export CASSANDRA_SEEDS="$(nslookup tasks.$SERVICENAME | grep 'Address'| grep -v '127.0.0.1' | cut -d: -f2 | awk '{ print $1}' | sort | xargs | sed 's/ /,/g')"
+export CASSANDRA_BROADCAST_ADDRESS=$ownip;
+echo $CASSANDRA_SEEDS
+echo $CASSANDRA_BROADCAST_ADDRESS
+```
+Which sets the environment varibles by looking at the dns.  The sleep 15s is needed to wait for docker to start all instances, so that DNS will report them.  15 seconds seem to be enough, but I guess this could vary.  
 
+To be able to do a nslookup, it had to be installed - so the Dockerfile is based on the cassandra:latest image and then we do
+```
+FROM cassandra
+RUN apt-get update && apt-get install -y dnsutils && rm -rf /var/lib/apt/lists/*
+ADD ./files/docker-entrypoint.sh /
+RUN chmod +x /docker-entrypoint.sh
+ENTRYPOINT ["/docker-entrypoint.sh","cassandra","-f"]
+```
+As you can see, apt-get install -y dnsutils install nslookup so that entrypoint.sh can use that.
+  
